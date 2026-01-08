@@ -20,15 +20,15 @@ jobs:
         with:
           fetch-depth: 0
       
+      - name: Install aria2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aria2
+      
       - name: Download Zig
         run: |
-          echo "=== Downloading Zig 0.16.0-dev ==="
-          wget https://ziglang.org/builds/zig-x86_64-linux-0.16.0-dev.2040+c475f1fcd.tar.xz
+          aria2c -s16 -x16 --log-level=error https://ziglang.org/builds/zig-x86_64-linux-0.16.0-dev.2040+c475f1fcd.tar.xz
           tar xf zig-x86_64-linux-0.16.0-dev.2040+c475f1fcd.tar.xz
-          echo "=== Zig Directory Structure ==="
-          ls -la
-          echo "=== Zig Version ==="
-          ./zig-*/zig version
           echo "ZIG_DIR=$(pwd)/$(ls -d zig-*)" >> $GITHUB_ENV
           echo "$(pwd)/$(ls -d zig-*)" >> $GITHUB_PATH
       
