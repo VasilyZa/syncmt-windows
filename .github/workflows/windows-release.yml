@@ -46,50 +46,48 @@ jobs:
           BUILD_DATE=$(date +%Y-%m-%d)
           BINARY_NAME="syncmt-${VERSION}-windows-x86_64.exe"
           
-          echo "Building version: ${VERSION}"
-          echo "Git commit: ${COMMIT}"
-          echo "Build date: ${BUILD_DATE}"
-          echo "Binary name: ${BINARY_NAME}"
+          echo "Building version: $VERSION"
+          echo "Git commit: $COMMIT"
+          echo "Build date: $BUILD_DATE"
+          echo "Binary name: $BINARY_NAME"
           echo "=== Zig Version ==="
           zig version
           echo "=== Building Windows executable ==="
           zig c++ \
-            -DVERSION="\"${VERSION}\"" \
-            -DGIT_COMMIT="\"${COMMIT}\"" \
-            -DBUILD_DATE="\"${BUILD_DATE}\"" \
+            -DVERSION="\"$VERSION\"" \
+            -DGIT_COMMIT="\"$COMMIT\"" \
+            -DBUILD_DATE="\"$BUILD_DATE\"" \
             -target x86_64-windows-gnu \
             -O2 -std=c++17 \
-            main.cpp -o ${BINARY_NAME}
-          ls -lh ${BINARY_NAME}
-          file ${BINARY_NAME}
+            main.cpp -o "$BINARY_NAME"
+          ls -lh "$BINARY_NAME"
           
-          echo "BINARY_NAME=${BINARY_NAME}" >> $GITHUB_ENV
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "COMMIT=${COMMIT}" >> $GITHUB_ENV
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "COMMIT=$COMMIT" >> $GITHUB_ENV
       
       - name: Create Release and Upload Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "## Release v${{ env.VERSION }}-win" > release_notes.txt
+          echo "## Release v${VERSION}-win" > release_notes.txt
           echo "" >> release_notes.txt
           echo "### Build Information" >> release_notes.txt
-          echo "- **Version**: ${{ env.VERSION }}" >> release_notes.txt
-          echo "- **Commit**: ${{ env.COMMIT }}" >> release_notes.txt
+          echo "- **Version**: ${VERSION}" >> release_notes.txt
+          echo "- **Commit**: ${COMMIT}" >> release_notes.txt
           echo "- **Compiler**: Zig 0.16.0-dev" >> release_notes.txt
           echo "- **Platform**: Windows x86_64" >> release_notes.txt
           echo "- **Build Date**: $(TZ='Asia/Shanghai' date +\"%Y-%m-%d %H:%M:%S UTC+8\")" >> release_notes.txt
           echo "" >> release_notes.txt
           echo "### Binaries" >> release_notes.txt
-          echo "- \`${{ env.BINARY_NAME }}\`: Windows executable for x86_64" >> release_notes.txt
+          echo "- \`${BINARY_NAME}\`: Windows executable for x86_64" >> release_notes.txt
           echo "" >> release_notes.txt
           echo "### Installation" >> release_notes.txt
           echo "**Windows:**" >> release_notes.txt
           echo "\`\`\`powershell" >> release_notes.txt
           echo "# Download the binary" >> release_notes.txt
-          echo "# Make it executable (if needed)" >> release_notes.txt
           echo "# Run directly or add to PATH" >> release_notes.txt
-          echo ".\\${{ env.BINARY_NAME }}" >> release_notes.txt
+          echo ".\\${BINARY_NAME}" >> release_notes.txt
           echo "\`\`\`" >> release_notes.txt
           echo "" >> release_notes.txt
           echo "### Usage" >> release_notes.txt
@@ -121,8 +119,8 @@ jobs:
           echo "" >> release_notes.txt
           echo "For more information, visit project repository." >> release_notes.txt
           
-          echo "=== Creating Release v${{ env.VERSION }}-win ==="
-          gh release create v${{ env.VERSION }}-win \
-            --title "Release v${{ env.VERSION }}-win (Windows)" \
+          echo "=== Creating Release v${VERSION}-win ==="
+          gh release create v${VERSION}-win \
+            --title "Release v${VERSION}-win (Windows)" \
             --notes-file release_notes.txt \
-            ./${{ env.BINARY_NAME }}
+            ./"${BINARY_NAME}"
