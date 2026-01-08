@@ -29,9 +29,8 @@ jobs:
         run: |
           aria2c -q -s16 -x16 https://ziglang.org/builds/zig-x86_64-linux-0.16.0-dev.2040+c475f1fcd.tar.xz
           tar xf zig-x86_64-linux-0.16.0-dev.2040+c475f1fcd.tar.xz
-          ZIG_DIR=$(pwd)/zig-x86_64-linux-0.16.0-dev.2040+c475f1fcd
-          echo "ZIG_DIR=${ZIG_DIR}" >> $GITHUB_ENV
-          echo "${ZIG_DIR}" >> $GITHUB_PATH
+          mv zig-x86_64-linux-0.16.0-dev.2040+c475f1fcd zig
+          echo "$(pwd)/zig" >> $GITHUB_PATH
       
       - name: Get commit hash
         id: commit
