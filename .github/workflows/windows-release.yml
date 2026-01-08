@@ -1,0 +1,128 @@
+name: Build and Release Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Download Zig
+        run: |
+          echo "=== Downloading Zig 0.16.0-dev ==="
+          wget https://ziglang.org/builds/zig-x86_64-linux-0.16.0-dev.2040+c475f1fcd.tar.xz
+          tar xf zig-x86_64-linux-0.16.0-dev.2040+c475f1fcd.tar.xz
+          echo "=== Zig Directory Structure ==="
+          ls -la
+          echo "=== Zig Version ==="
+          ./zig-*/zig version
+          echo "ZIG_DIR=$(pwd)/$(ls -d zig-*)" >> $GITHUB_ENV
+          echo "$(pwd)/$(ls -d zig-*)" >> $GITHUB_PATH
+      
+      - name: Get commit hash
+        id: commit
+        run: |
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          echo "hash=${COMMIT_HASH}" >> $GITHUB_OUTPUT
+          echo "Commit hash: ${COMMIT_HASH}"
+      
+      - name: Build Windows executable with Zig
+        run: |
+          VERSION="${{ inputs.version }}"
+          COMMIT="${{ steps.commit.outputs.hash }}"
+          BUILD_DATE=$(date +%Y-%m-%d)
+          BINARY_NAME="syncmt-${VERSION}-windows-x86_64.exe"
+          
+          echo "Building version: ${VERSION}"
+          echo "Git commit: ${COMMIT}"
+          echo "Build date: ${BUILD_DATE}"
+          echo "Binary name: ${BINARY_NAME}"
+          echo "=== Zig Version ==="
+          zig version
+          echo "=== Building Windows executable ==="
+          zig c++ \
+            -DVERSION="\"${VERSION}\"" \
+            -DGIT_COMMIT="\"${COMMIT}\"" \
+            -DBUILD_DATE="\"${BUILD_DATE}\"" \
+            -target x86_64-windows-gnu \
+            -O2 -std=c++17 \
+            main.cpp -o ${BINARY_NAME}
+          ls -lh ${BINARY_NAME}
+          file ${BINARY_NAME}
+          
+          echo "BINARY_NAME=${BINARY_NAME}" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "COMMIT=${COMMIT}" >> $GITHUB_ENV
+      
+      - name: Create Release and Upload Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "## Release v${{ env.VERSION }}-win" > release_notes.txt
+          echo "" >> release_notes.txt
+          echo "### Build Information" >> release_notes.txt
+          echo "- **Version**: ${{ env.VERSION }}" >> release_notes.txt
+          echo "- **Commit**: ${{ env.COMMIT }}" >> release_notes.txt
+          echo "- **Compiler**: Zig 0.16.0-dev" >> release_notes.txt
+          echo "- **Platform**: Windows x86_64" >> release_notes.txt
+          echo "- **Build Date**: $(TZ='Asia/Shanghai' date +\"%Y-%m-%d %H:%M:%S UTC+8\")" >> release_notes.txt
+          echo "" >> release_notes.txt
+          echo "### Binaries" >> release_notes.txt
+          echo "- \`${{ env.BINARY_NAME }}\`: Windows executable for x86_64" >> release_notes.txt
+          echo "" >> release_notes.txt
+          echo "### Installation" >> release_notes.txt
+          echo "**Windows:**" >> release_notes.txt
+          echo "\`\`\`powershell" >> release_notes.txt
+          echo "# Download the binary" >> release_notes.txt
+          echo "# Make it executable (if needed)" >> release_notes.txt
+          echo "# Run directly or add to PATH" >> release_notes.txt
+          echo ".\\${{ env.BINARY_NAME }}" >> release_notes.txt
+          echo "\`\`\`" >> release_notes.txt
+          echo "" >> release_notes.txt
+          echo "### Usage" >> release_notes.txt
+          echo "Basic usage:" >> release_notes.txt
+          echo "  syncmt.exe <source>... <destination>" >> release_notes.txt
+          echo "" >> release_notes.txt
+          echo "Options:" >> release_notes.txt
+          echo "  -t, --threads <num>   Number of threads (default: 4)" >> release_notes.txt
+          echo "  -m, --move            Move files instead of copying" >> release_notes.txt
+          echo "  -v, --verbose         Enable verbose output" >> release_notes.txt
+          echo "  -o, --overwrite       Overwrite existing files" >> release_notes.txt
+          echo "  -s, --skip            Skip existing files" >> release_notes.txt
+          echo "  -h, --help            Show help message" >> release_notes.txt
+          echo "  -V, --version         Print version information" >> release_notes.txt
+          echo "" >> release_notes.txt
+          echo "### Performance Optimizations" >> release_notes.txt
+          echo "- Windows API optimized file operations" >> release_notes.txt
+          echo "- Multi-threaded copying with adaptive chunk sizes" >> release_notes.txt
+          echo "- Efficient directory scanning with FindFirstFile/FindNextFile" >> release_notes.txt
+          echo "- Memory-mapped file support" >> release_notes.txt
+          echo "- Proper resource management with RAII" >> release_notes.txt
+          echo "" >> release_notes.txt
+          echo "### Platform Specific Features" >> release_notes.txt
+          echo "- Uses Windows HANDLE for file operations" >> release_notes.txt
+          echo "- Wide character (Unicode) path support" >> release_notes.txt
+          echo "- FILE_FLAG_SEQUENTIAL_SCAN for optimized sequential reads" >> release_notes.txt
+          echo "- MoveFileEx with cross-device support" >> release_notes.txt
+          echo "- SetFileTime for timestamp preservation" >> release_notes.txt
+          echo "" >> release_notes.txt
+          echo "For more information, visit project repository." >> release_notes.txt
+          
+          echo "=== Creating Release v${{ env.VERSION }}-win ==="
+          gh release create v${{ env.VERSION }}-win \
+            --title "Release v${{ env.VERSION }}-win (Windows)" \
+            --notes-file release_notes.txt \
+            ./${{ env.BINARY_NAME }}
