@@ -54,12 +54,12 @@ jobs:
           zig version
           echo "=== Building Windows executable ==="
           zig c++ \
-            -DVERSION="\"$VERSION\"" \
-            -DGIT_COMMIT="\"$COMMIT\"" \
-            -DBUILD_DATE="\"$BUILD_DATE\"" \
+            -DVERSION='\"'$VERSION'\"' \
+            -DGIT_COMMIT='\"'$COMMIT'\"' \
+            -DBUILD_DATE='\"'$BUILD_DATE'\"' \
             -target x86_64-windows-gnu \
             -O2 -std=c++17 \
-            main.cpp -o "$BINARY_NAME"
+            i18n.cpp file_handle.cpp file_operations.cpp thread_pool.cpp file_copier.cpp main.cpp -o "$BINARY_NAME"
           ls -lh "$BINARY_NAME"
           
           echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
